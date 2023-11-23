@@ -20,22 +20,26 @@ spiller_bilde = [
                 pygame.transform.scale_by(pygame.image.load("bilder/spiller.png").convert_alpha(), 0.15),
                 pygame.transform.scale_by(pygame.image.load("bilder/spiller-ned.png").convert_alpha(), 0.15),
                 pygame.transform.scale_by(pygame.image.load("bilder/spiller-opp.png").convert_alpha(), 0.15)]
-hai_bilde = pygame.transform.scale_by(pygame.image.load("bilder/hai.png").convert_alpha(), 0.3)
+hai_bilde = pygame.transform.scale_by(pygame.image.load("bilder/hai.png").convert_alpha(), 0.25)
 sand_bilde = pygame.image.load("bilder/sand.png")
 havet_bilde = pygame.image.load("bilder/havet.png")
-gress_bilde = pygame.transform.scale_by(pygame.image.load("bilder/gress.png").convert_alpha(), 0.3)
+gress_bilde = pygame.transform.scale_by(pygame.image.load("bilder/gress.png").convert_alpha(), 0.25)
 
 # spill variabler 
 
 bakke_fart = 1 # hvor for bakken kommer til å bevege seg og hindrene kommer til å komme 
 fisk_start_pos = (100, 250)
+poeng = 0 
+font = pygame.font.SysFont('Areal', 26)
 
 class Hinder(pygame.sprite.Sprite):
-    def __init__(self, x, y, image):
+    def __init__(self, x: int, y: int, image: pygame.surface.Surface, hinder_typ: pygame.surface.Surface):
         pygame.sprite.Sprite.__init__(self)
         self.image = image
         self.rect = self.image.get_rect()
-        self.rect.x, self.rect.y = x, y 
+        self.rect.x, self.rect.y = x, y
+        self.enter, self.exit, self.passed = False, False, False
+        self.hinder_typ = hinder_typ 
 
     def update(self):
         # beveger hindre 
@@ -44,7 +48,16 @@ class Hinder(pygame.sprite.Sprite):
             self.kill()
 
         
-
+    # Poeng 
+        global poeng
+        if self.hinder_typ == 'gress':
+            if fisk_start_pos[0] > self.rect.topleft[0] and not self.passed:
+                self.enter = True
+            if fisk_start_pos[0] > self.rect.topright and not self.passed:
+                self.exit = True
+            if self.enter and self.exit and not self.passed: 
+                self.passed = True
+                poeng += 1
 
 class Fisk(pygame.sprite.Sprite):
     def __init__(self):
@@ -58,10 +71,12 @@ class Fisk(pygame.sprite.Sprite):
         self.image_index = 0
         self.vel = 0 
         self.flap = False
+        self.alive = True
 
     def update(self, user_input):
         # animate fish
-        self.image_index += 1 
+        if self.alive:
+            self.image_index += 1 
         if self.image_index >= 30:
             self.image_index = 0 
         # self.image = spiller_bilde[self.image_index // 10]
@@ -84,7 +99,7 @@ class Fisk(pygame.sprite.Sprite):
         self.image = pygame.transform.rotate(self.image, self.vel * -7)
 
         # user input 
-        if user_input[pygame.K_SPACE] and not self.flap and self.rect.y > 0:
+        if user_input[pygame.K_SPACE] and not self.flap and self.rect.y > 0 and self.alive:
             self.flap = True
             self.vel = -7 
 
@@ -115,6 +130,8 @@ def quit_game(): # Funksjon som gjør det mulig å avslutte spillet, med å tryk
 # Game main method 
 
 def main(): 
+    global poeng
+
     # Instaniate fisk
     fisk = pygame.sprite.GroupSingle()
     fisk.add(Fisk())
@@ -155,21 +172,31 @@ def main():
         fisk.draw(vindu)
         hinder.draw(vindu)
 
+        poeng_text = font.render('Poeng: ' + str(poeng), True, pygame.Color(255, 255, 255))
+        vindu.blit(poeng_text, (20, 20))
+
         #Uptate- piper, grounds and bird
-        bakke.update()
-        hinder.update()
+        if fisk.sprite.alive:    
+            bakke.update()
+            hinder.update()
         fisk.update(user_input)
         # def draw(self, surface):
             # surface.blit(self.image, self.rect)
 
         # Hinder spawn 
-        if hinder_tid <= 0:
-            x_top, x_bottom = 550,550 # disse må du endre på på slutten
-            y_top = random.randint(-600, -480)
+        if hinder_tid <= 0 and fisk.sprite.alive:
+            x_top, x_bottom = BREDDE, BREDDE  # Endret x-posisjonene til høyre kant av vinduet
+            y_top = random.randint(10, 300)  # Justert området for tilfeldig vertikal posisjon
             y_bottom = y_top + random.randint(90, 130) + gress_bilde.get_height()
-            hinder.add(Hinder(x_top, y_top, hai_bilde ))
+
+            # Sjekker om hindret går utenfor skjermen og justerer i så fall posisjonen
+            if y_bottom > HOYDE:
+                y_bottom = HOYDE - gress_bilde.get_height()
+
+            hinder.add(Hinder(x_top, y_top, hai_bilde))
             hinder.add(Hinder(x_bottom, y_bottom, gress_bilde))
             hinder_tid = random.randint(180, 250)
+
         hinder_tid -= 1
 
         # spawn ground 
@@ -181,7 +208,3 @@ def main():
         pygame.display.update() # Hvis stemmer opptatere vindet
 main()
 
-# dino_x = 50
-# dino_y = 325
-# dino_bredde = 15
-# dino_hoyde = 15
