@@ -13,15 +13,14 @@ BREDDE = 720
 vindu = pygame.display.set_mode((BREDDE, HOYDE)) # Lager et vindu med de definerte konstante variablene 
 
 # Bilder 
-spiller_bilde = [
-                pygame.transform.scale_by(pygame.image.load("bilder/spiller.png").convert_alpha(), 0.1),
-                pygame.transform.scale_by(pygame.image.load("bilder/spiller-ned.png").convert_alpha(), 0.1),
-                pygame.transform.scale_by(pygame.image.load("bilder/spiller-opp.png").convert_alpha(), 0.1)]
+spiller_bilde = [   pygame.transform.scale_by(pygame.image.load("bilder/spiller.png").convert_alpha(), 0.09), 
+                    pygame.transform.scale_by(pygame.image.load("bilder/spiller-ned.png").convert_alpha(), 0.09),
+                    pygame.transform.scale_by(pygame.image.load("bilder/spiller-opp.png").convert_alpha(), 0.09)]
 hai_bilde = pygame.transform.scale_by(pygame.image.load("bilder/hai.png").convert_alpha(), 0.15)
 sand_bilde = pygame.image.load("bilder/sand.png")
 havet_bilde = pygame.image.load("bilder/havet.png")
 gress_bilde = pygame.transform.scale_by(pygame.image.load("bilder/gress.png").convert_alpha(), 0.2)
-game_over_bilde = pygame.transform.scale_by(pygame.image.load("bilder/game_over.jpeg").convert_alpha(), 0.25)
+game_over_bilde = pygame.transform.scale_by(pygame.image.load("bilder/game_over.jpeg").convert_alpha(), 1)
 # spill variabler 
 
 bakke_fart = 1 # hvor for bakken kommer til å bevege seg og hindrene kommer til å komme 
@@ -45,7 +44,6 @@ class Hinder(pygame.sprite.Sprite):
         if self.rect.x <= - BREDDE:
             self.kill()
 
-        
     # Poeng 
         global poeng
         if self.hinder_typ == 'gress':
@@ -62,9 +60,6 @@ class Fisk(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.image = spiller_bilde[0]
         self.rect = self.image.get_rect()
-        #self.image = pygame.transform.scale(self.image, (10, 10))
-        # self.image = pygame.transform.scale_by(spiller_bilde, 0.4)
-       #  self.image = pygame.transform.scale(origin al_image, (spiller_x, spiller_y))
         self.rect.center = fisk_start_pos
         self.image_index = 0
         self.vel = 0 
@@ -72,18 +67,14 @@ class Fisk(pygame.sprite.Sprite):
         self.alive = True
 
     def update(self, user_input):
-        # animate fish
+        # fisk bevegelse
         if self.alive:
             self.image_index += 1 
         if self.image_index >= 30:
             self.image_index = 0 
-        # self.image = spiller_bilde[self.image_index // 10]
         self.image = spiller_bilde[self.image_index // 10]
-        # self.image = pygame.transform.scale_by(self.bilde, 0.2)
 
-        # self.scaled_image = pygame.transform.scale(self.image, (10, 10)) # Ny
-
-    # gravity and flap 
+    # tyngdekraft og swømme
         self.vel += 0.5
         if self.vel > 7:
             self.vel = 7
@@ -128,9 +119,9 @@ def quit_game(): # Funksjon som gjør det mulig å avslutte spillet, med å tryk
 # Game main method 
 
 def main(): 
-    global poeng
+    global poeng, bakke_fart
 
-    # Instaniate fisk
+    # Fisk i rammen 
     fisk = pygame.sprite.GroupSingle()
     fisk.add(Fisk())
 
@@ -138,13 +129,13 @@ def main():
     hinder_tid = 0
     hinder = pygame.sprite.Group()
 
-    # Instantiate Initial Ground 
+    # setter på sanden med koordinater 
     x_pos_bakke, y_pos_bakke = 0, 360
     bakke = pygame.sprite.Group()
     bakke.add(Bakke(x_pos_bakke, y_pos_bakke))
 
-
     start = True
+    teller = 0
     while start:
         # Quit
         quit_game() # Lar oss avslutte spillet
@@ -152,34 +143,30 @@ def main():
         # Reset Frame
         vindu.fill((0, 0, 0)) # Setter bagrunnsfargen i form av RGB values som er Rød Grønn og Blå
 
-       
-
         # User input 
         user_input = pygame.key.get_pressed()
 
         # Tegne bakgrunn
         vindu.blit(havet_bilde, (0, 0)) # bruker et bilde som bakgrunn, andre agrum entet er hvor på skjermen jeg ønsker vinduet 
-        # vindu.blit(spiller_bilde, (spiller_x, spiller_y))
-        # Spawn Ground
+        
+        # At bakgrunnen kommer flere ganger
 
         if len(bakke) <= 2:
             bakke.add(Bakke(BREDDE, y_pos_bakke))
 
-        # Draw - Pipes, ground and bird 
+        # Tegne, fisken bakken og hindringer
         bakke.draw(vindu)
         fisk.draw(vindu)
         hinder.draw(vindu)
 
         poeng_text = font.render('Poeng: ' + str(poeng), True, pygame.Color(255, 255, 255))
-        vindu.blit(poeng_text, (20, 20))
+        vindu.blit(poeng_text, (30, 30))
 
-        #Uptate- piper, grounds and bird
+        #uptatere fisk, bakke og hindringer 
         if fisk.sprite.alive:    
             bakke.update()
             hinder.update()
         fisk.update(user_input)
-        # def draw(self, surface):
-            # surface.blit(self.image, self.rect)
 
         # kollisjon hinder 
         kollisjon_hinder = pygame.sprite.spritecollide(fisk.sprites()[0], hinder, False)
@@ -190,12 +177,11 @@ def main():
                 vindu.blit(game_over_bilde, (BREDDE // 2 - game_over_bilde.get_width() // 2,
                                             HOYDE // 2 - game_over_bilde.get_height() // 2))
 
-
-        # Hinder spawn 
+        # Hinder random spawn
         if hinder_tid <= 0 and fisk.sprite.alive:
             x_top, x_bottom = BREDDE, BREDDE  # Endret x-posisjonene til høyre kant av vinduet
-            y_top = random.randint(100, 200)  # Justert området for tilfeldig vertikal posisjon
-            y_bottom = random.randint(360, HOYDE)
+            y_top = random.randint(80, 170)  # Justert området for tilfeldig vertikal posisjon
+            y_bottom = random.randint(430, HOYDE)
 
             # Sjekker om hindret går utenfor skjermen og justerer i så fall posisjonen
             if y_bottom > HOYDE:
@@ -206,13 +192,10 @@ def main():
             hinder_tid = random.randint(180, 250)
 
         hinder_tid -= 1
-
-
-        # spawn ground 
-
-        #if len(bakke) <= 2: 
-            #bakke.add(Bakke(BREDDE, y_pos_bakke))
-
+        teller += 1
+        if teller > 600:
+            bakke_fart += 1
+            teller = 0
         klokke.tick(60) # hvor mange ruter spillet skal bevege seg i pr sek, limmiterer til 60 "frams"pr sekund
         pygame.display.update() # Hvis stemmer opptatere vindet
-main()
+main()      
