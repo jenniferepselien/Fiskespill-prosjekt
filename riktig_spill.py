@@ -21,13 +21,14 @@ sand_bilde = pygame.image.load("bilder/sand.png")
 havet_bilde = pygame.image.load("bilder/havet.png")
 gress_bilde = pygame.transform.scale_by(pygame.image.load("bilder/gress.png").convert_alpha(), 0.2)
 game_over_bilde = pygame.transform.scale_by(pygame.image.load("bilder/game_over.jpeg").convert_alpha(), 1)
-# spill variabler 
 
+# Spill variabler 
 bakke_fart = 1 # hvor for bakken kommer til å bevege seg og hindrene kommer til å komme 
 fisk_start_pos = (250, 200)
 poeng = 0 
 font = pygame.font.SysFont('Areal', 26)
 
+# Klasser og funksjoner til klassene 
 class Hinder(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, image: pygame.surface.Surface, hinder_typ: str):
         pygame.sprite.Sprite.__init__(self)
@@ -39,7 +40,7 @@ class Hinder(pygame.sprite.Sprite):
         self.hinder_typ = hinder_typ 
 
     def update(self):
-        # beveger hindre 
+        # Bevegelse i hindrene
         self.rect.x -= bakke_fart
         if self.rect.x <= - BREDDE:
             self.kill()
@@ -67,14 +68,14 @@ class Fisk(pygame.sprite.Sprite):
         self.alive = True
 
     def update(self, user_input):
-        # fisk bevegelse
+        # Fisk bevegelse
         if self.alive:
             self.image_index += 1 
         if self.image_index >= 30:
             self.image_index = 0 
         self.image = spiller_bilde[self.image_index // 10]
 
-    # tyngdekraft og swømme
+    # Tyngdekraft og svømme
         self.vel += 0.5
         if self.vel > 7:
             self.vel = 7
@@ -84,10 +85,10 @@ class Fisk(pygame.sprite.Sprite):
             self.flap = False
         
 
-        # rotate fisk 
-        self.image = pygame.transform.rotate(self.image, self.vel * -7)
+        # Bevegelse i fisken
+        self.image = pygame.transform.rotate(self.image, self.vel * -2)
 
-        # user input 
+        # User input
         if user_input[pygame.K_SPACE] and not self.flap and self.rect.y > 0 and self.alive:
             self.flap = True
             self.vel = -7 
@@ -195,6 +196,7 @@ def main():
         teller += 1
         if teller > 600:
             bakke_fart += 1
+            hinder_tid += 1
             teller = 0
         klokke.tick(60) # hvor mange ruter spillet skal bevege seg i pr sek, limmiterer til 60 "frams"pr sekund
         pygame.display.update() # Hvis stemmer opptatere vindet
